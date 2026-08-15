@@ -1,0 +1,68 @@
+Project Title
+
+Automated YARA Rule Generation with Cross-Sample Generalization and False-Positive Minimization
+
+Problem Statement
+
+Manually writing YARA rules is slow and doesn't scale — analysts triage hundreds of samples a day. Naive automated generators tend to overfit (producing rules that match only the exact sample they were trained on) or produce excessive false positives (flagging benign software). This project builds a generator that produces rules generalizing across a malware family while empirically minimizing false positives against real goodware.
+
+Architecture — Pipeline Stages
+
+Stage 1: Sample Ingestion & Feature Extraction
+
+Input: a folder of malware samples (ideally multiple samples from the same family) and a separate goodware corpus
+Extract candidate indicators per sample:
+Printable strings (≥5 chars, matching YARA's own string-length convention)
+Import table entries (DLL + function combos)
+Section names/characteristics
+Byte sequences at fixed offsets (e.g., magic bytes, header patterns)
+PE-specific fields via YARA's built-in pe module (rich header hash, timestamp, entry point section)
+
+Stage 2: Cross-Sample Commonality Scoring
+
+For a family of N malware samples, count how often each candidate string/pattern appears across the set
+Patterns appearing in most/all samples of the family are strong generalization candidates; patterns unique to one sample get discarded (this directly solves the overfitting problem)
+This is conceptually similar to feature selection in ML — you're scoring "how representative is this indicator of the family," not "does this indicator exist in one file"
+
+Stage 3: Goodware Rarity Filtering (False-Positive Prevention)
+
+Cross-reference each surviving candidate indicator against your goodware corpus
+Any indicator that also appears commonly in benign software gets penalized or dropped — a string that shows up in both malware and legitimate software is a bad discriminator
+This step is what separates a "toy" generator from a usable one — it's the core research contribution
+
+Stage 4: Rule Synthesis
+
+Take the surviving high-value indicators and assemble them into valid YARA syntax
+Use condition logic like 3 of ($s1, $s2, $s3, ...) rather than requiring all strings match — this builds in tolerance for minor variants within the family, improving generalization further
+
+Stage 5: Automated Validation & Scoring
+
+Run the generated rule against:
+A held-out set of same-family malware samples (not used in generation) — measures detection rate
+The full goodware corpus — measures false-positive rate
+Report both numbers per rule — this is your key evaluation metric
+Evaluation Metrics (what makes this a real project, not just a script)
+Detection rate on held-out malware (same family, unseen samples)
+False-positive rate on a goodware corpus (aim for near-zero — a single FP against common software is a serious rule-quality failure in real practice)
+Rule specificity — how many indicators per rule (fewer, well-chosen indicators = better than a rule with 50 fragile conditions)
+Comparison against a naive baseline: a "dump every unique string from one sample" generator, to quantitatively show your generalization approach is actually better — this baseline-vs-improved-method comparison is exactly the kind of rigor a 3-credit project needs
+Suggested Datasets
+Malware families: theZoo (github, curated malware samples for research) or samples from a course-provided malware set if your program has one
+Goodware: legitimate executables from GitHub releases, or the goodware set you already assembled for your EMBER/Project 1 work — you can reuse it here directly
+Consider VirusShare or MalwareBazaar (both established, research-oriented malware repositories with proper access controls) if you need more samples for cross-family testing
+Tools/Libraries
+yara-python — for testing generated rules against your corpus programmatically
+pefile or lief — same tools you already used in Project 1, for structural feature extraction
+Reference yarGen (Florian Roth's open-source generator) — read its design, don't copy it, but it's the established baseline your generalization approach should be measured against or inspired by
+Suggested Milestones (aligns with the ~2-2.5 week estimate from before)
+Week 1, days 1-3: YARA syntax mastery + hand-written test rules
+Week 1, days 4-7: Stages 1-2 (extraction + commonality scoring)
+Week 2, days 1-3: Stage 3 (goodware filtering) — the core contribution
+Week 2, days 4-5: Stage 4 (rule synthesis)
+Week 2, days 6-7: Stage 5 (validation) + baseline comparison + writeup
+Deliverables for submission
+Working generator tool (CLI is fine)
+A report showing: methodology, generated rules for 2-3 malware families, detection rate + FP rate tables, comparison against naive baseline
+Optional stretch goal: a small web/CLI dashboard showing rule quality metrics visually
+
+This is a clean, fully defensive, zero-gray-area project — happy to help you flesh out any single stage in more depth (e.g., the commonality-scoring math, or how to structure the goodware corpus) whenever you're ready to start building.

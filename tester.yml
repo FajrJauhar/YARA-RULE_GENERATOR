@@ -1,0 +1,11 @@
+rule tester : test
+{
+  meta:
+       description = "This is a Test example"
+       name = "Fajr K K"
+       reference = "https://yara.readthedocs.io/en/latest/"
+  strings:
+        $a = "CloseHandle"
+  condition:
+        $a
+}
