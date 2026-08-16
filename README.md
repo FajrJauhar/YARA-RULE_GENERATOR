@@ -47,3 +47,16 @@ PE Feature Extraction
                   |
                   v
              .yar Rule File
+## Screenshots
+
+### Discriminative Feature Scoring
+
+The system ranks extracted PE features according to their discriminative scores based on their occurrence in malware and goodware samples.
+
+![Discriminative Feature Scoring](goodware/discriminative.png)
+
+### Automatically Generated YARA Rule
+
+The selected features are converted into a YARA rule automatically by the Python-based rule generator.
+
+![Generated YARA Rule](goodware/generated_rule.png)
